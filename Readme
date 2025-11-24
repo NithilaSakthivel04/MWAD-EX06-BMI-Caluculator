@@ -2,469 +2,188 @@
 
 
 ## AIM
-To create a BMI calculator using React Router 
+To develop a responsive and interactive Body Mass Index (BMI) Calculator using React that allows users to input their height and weight, and calculates their BMI to categorize their health status (e.g., Underweight, Normal, Overweight, Obese).
 
-## ALGORITHM
-### STEP 1 State Initialization
-Manage the current page (Home or Calculator) using React Router.
+## DESIGN STEPS
 
-### STEP 2 User Input
-Accept weight and height inputs from the user.
+### STEP 1: Initialize React Project
 
-### STEP 3 BMI Calculation
-Calculate the BMI based on user input.
+<li>Create a new React app using create-react-app.</li>
+<li>Install React Router using:</li>
+npm install react-router-dom
 
-### STEP 4 Categorization
-Classify the BMI result into categories (Underweight, Normal weight, Overweight, Obesity).
+### STEP 2: Set Up Routing
 
-### STEP 5 Navigation
-Navigate between pages using React Router.
+Create routing structure with react-router-dom:
+
+<li>Home route (/) – Intro or Navigation</li>
+
+<li>BMI Calculator route (/bmi)</li>
+
+<li>Result route (/result)</li>
+
+### STEP 3: Design the BMI Form Page
+
+<li>Create a form to accept Height (in cm or m) and Weight (in kg).</li>
+
+<li>On form submit, navigate to the result page with entered values via URL query params or context/state.</li>
+
+## STEP 4: Handle Input Validation
+
+<li>Check if height and weight are valid numbers.</li>
+
+<li>Optionally, show error messages for invalid inputs.</li>
+
+### STEP 5: Perform BMI Calculation
+
+<li>In the result component:
+
+<li>Extract height and weight from the route (URL or passed state).</li>
+
+<li>Apply the BMI formula:</li>
+
+![image](https://github.com/user-attachments/assets/ec785506-c96b-489e-8783-fb1a5d36101a)
+​
+ 
+<li>Convert height from cm to m if needed.</li></li>
+
+### STEP 6: Display Result
+
+<li>Show calculated BMI.</li>
+
+<li>Show category based on BMI range:
+
+<li>Underweight, Normal, Overweight, Obese, etc.</li></li>
+
+### STEP 7: Navigation Options
+
+<li>Provide a button to go back to the BMI form to calculate again.</li>
+
+### STEP 8: Enhancements
+
+<li>Add styling using CSS or Tailwind.</li>
 
 ## PROGRAM
+## bmicalclater.jsx:
 ```
-BMI.JSX
-// src/components/BMICalculator.jsx
-import React, { useState, useMemo } from "react";
-import "./styles.css";
+import React, { useState } from 'react';
 
-export default function BMICalculator() {
-  // units: 'metric' => kg & cm, 'imperial' => lb & inches
-  const [units, setUnits] = useState("metric");
-  const [weight, setWeight] = useState(""); // kg or lb
-  const [height, setHeight] = useState(""); // cm or inches
-  const [error, setError] = useState("");
-  const [touched, setTouched] = useState({ weight: false, height: false });
+const BMICalculator = () => {
+  const [weight, setWeight] = useState('');
+  const [height, setHeight] = useState('');
+  const [bmi, setBmi] = useState(null);
+  const [category, setCategory] = useState('');
 
-  // Helper: convert inputs to numeric safely
-  const parseNum = (v) => {
-    if (v === "" || v === null || v === undefined) return NaN;
-    // remove commas and trim
-    return Number(String(v).replace(/,/g, "").trim());
-  };
+  const calculateBMI = () => {
+    if (!weight || !height) return;
+    const h = height / 100;
+    const result = (weight / (h * h)).toFixed(2);
+    setBmi(result);
 
-  // Compute BMI only when inputs change
-  const { bmi, category, advice } = useMemo(() => {
-    const w = parseNum(weight);
-    const h = parseNum(height);
-
-    if (Number.isNaN(w) || Number.isNaN(h) || w <= 0 || h <= 0) {
-      return { bmi: null, category: null, advice: null };
-    }
-
-    // Convert to kg and meters
-    let kg = w;
-    let meters = h;
-    if (units === "metric") {
-      // weight in kg, height in cm => meters = cm / 100
-      meters = h / 100;
-    } else {
-      // imperial: weight in lb -> kg, height in inches -> meters
-      kg = w * 0.45359237;
-      meters = h * 0.0254;
-    }
-
-    // BMI formula: kg / m^2
-    const rawBmi = kg / (meters * meters);
-    // Round to one decimal place (digit-by-digit care)
-    const rounded = Math.round(rawBmi * 10) / 10;
-
-    // Categories (WHO):
-    // underweight <18.5, normal 18.5–24.9, overweight 25–29.9, obesity >=30
-    let cat = "";
-    let adviceText = "";
-    if (rounded < 18.5) {
-      cat = "Underweight";
-      adviceText = "You are below the healthy weight range. Consider a balanced, calorie-rich diet and check with a healthcare professional.";
-    } else if (rounded < 25) {
-      cat = "Normal";
-      adviceText = "Great — your BMI is in the healthy range. Keep up a balanced diet and regular activity.";
-    } else if (rounded < 30) {
-      cat = "Overweight";
-      adviceText = "You are above the recommended range. Consider adjusting diet and increasing physical activity; consult a professional if needed.";
-    } else {
-      cat = "Obese";
-      adviceText = "BMI indicates obesity. It's advisable to consult a healthcare professional to create a safe weight plan.";
-    }
-
-    return { bmi: rounded, category: cat, advice: adviceText };
-  }, [weight, height, units]);
-
-  // Input validation logic to show helpful errors
-  const validate = () => {
-    setError("");
-    const w = parseNum(weight);
-    const h = parseNum(height);
-    if (Number.isNaN(w) || w <= 0) {
-      setError("Please enter a valid positive weight.");
-      return false;
-    }
-    if (Number.isNaN(h) || h <= 0) {
-      setError("Please enter a valid positive height.");
-      return false;
-    }
-    // realistic limits
-    if (units === "metric") {
-      if (w < 10 || w > 500) {
-        setError("Weight (kg) seems unrealistic. Enter between 10 and 500 kg.");
-        return false;
-      }
-      if (h < 50 || h > 300) {
-        setError("Height (cm) seems unrealistic. Enter between 50 and 300 cm.");
-        return false;
-      }
-    } else {
-      if (w < 22 || w > 1100) {
-        setError("Weight (lb) seems unrealistic. Enter between 22 and 1100 lb.");
-        return false;
-      }
-      if (h < 20 || h > 120) {
-        setError("Height (in) seems unrealistic. Enter between 20 and 120 in.");
-        return false;
-      }
-    }
-    setError("");
-    return true;
-  };
-
-  const handleSubmit = (e) => {
-    e?.preventDefault();
-    setTouched({ weight: true, height: true });
-    if (!validate()) return;
-    // nothing else needed — BMI displayed live
-  };
-
-  const resetForm = () => {
-    setWeight("");
-    setHeight("");
-    setTouched({ weight: false, height: false });
-    setError("");
+    if (result < 18.5) setCategory('Underweight');
+    else if (result < 24.9) setCategory('Normal weight');
+    else if (result < 29.9) setCategory('Overweight');
+    else setCategory('Obesity');
   };
 
   return (
-    <div className="bmi-wrap">
-      <form className="bmi-card" onSubmit={handleSubmit} noValidate>
-        <h2 className="bmi-title">BMI Calculator</h2>
+    <div className="page">
+      <h2>BMI Calculator</h2>
+      <input
+        type="number"
+        placeholder="Weight (kg)"
+        value={weight}
+        onChange={(e) => setWeight(e.target.value)}
+      />
+      <input
+        type="number"
+        placeholder="Height (cm)"
+        value={height}
+        onChange={(e) => setHeight(e.target.value)}
+      />
+      <button onClick={calculateBMI}>Calculate</button>
 
-        <div className="unit-toggle" role="radiogroup" aria-label="Unit system">
-          <label className={`unit ${units === "metric" ? "selected" : ""}`}>
-            <input
-              type="radio"
-              name="units"
-              value="metric"
-              checked={units === "metric"}
-              onChange={() => setUnits("metric")}
-            />
-            Metric (kg, cm)
-          </label>
-          <label className={`unit ${units === "imperial" ? "selected" : ""}`}>
-            <input
-              type="radio"
-              name="units"
-              value="imperial"
-              checked={units === "imperial"}
-              onChange={() => setUnits("imperial")}
-            />
-            Imperial (lb, in)
-          </label>
+      {bmi && (
+        <div className="result">
+          <p><strong>BMI:</strong> {bmi}</p>
+          <p><strong>Category:</strong> {category}</p>
         </div>
-
-        <div className="fields">
-          <label className="field">
-            <span className="label-text">Weight ({units === "metric" ? "kg" : "lb"})</span>
-            <input
-              inputMode="decimal"
-              pattern="[0-9]*"
-              type="text"
-              value={weight}
-              placeholder={units === "metric" ? "e.g. 70" : "e.g. 154"}
-              onChange={(e) => setWeight(e.target.value)}
-              onBlur={() => setTouched((t) => ({ ...t, weight: true }))}
-              aria-invalid={touched.weight && (weight === "" || Number.isNaN(Number(weight)))}
-            />
-          </label>
-
-          <label className="field">
-            <span className="label-text">Height ({units === "metric" ? "cm" : "in"})</span>
-            <input
-              inputMode="decimal"
-              pattern="[0-9]*"
-              type="text"
-              value={height}
-              placeholder={units === "metric" ? "e.g. 175" : "e.g. 69"}
-              onChange={(e) => setHeight(e.target.value)}
-              onBlur={() => setTouched((t) => ({ ...t, height: true }))}
-              aria-invalid={touched.height && (height === "" || Number.isNaN(Number(height)))}
-            />
-          </label>
-        </div>
-
-        {error && <div className="error" role="alert">{error}</div>}
-
-        <div className="actions">
-          <button type="submit" className="btn primary">Calculate</button>
-          <button type="button" className="btn ghost" onClick={resetForm}>Reset</button>
-        </div>
-
-        <div className="result" aria-live="polite">
-          {bmi === null ? (
-            <p className="result-placeholder">Enter your values and press <strong>Calculate</strong>.</p>
-          ) : (
-            <div className="result-box">
-              <div className="bmi-value">
-                <span className="num">{bmi}</span>
-                <span className="unit-text">kg/m²</span>
-              </div>
-              <div className={`bmi-category ${category ? category.toLowerCase() : ""}`}>
-                <strong>{category}</strong>
-              </div>
-              <p className="advice">{advice}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="help">
-          <p>Note: BMI is a screening tool and doesn't account for muscle mass or distribution. For personalised advice, consult a healthcare professional.</p>
-        </div>
-      </form>
+      )}
     </div>
   );
-}
+};
+
+export default BMICalculator;
 ```
+### Home.jsx
 ```
-STYLE.CSS
-/* src/components/styles.css */
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-/* Basic reset for the component scope */
-* { box-sizing: border-box; }
-body, html, #root { height: 100%; margin: 0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+const Home = () => {
+  return (
+    <div className="page">
+      <h1>Welcome to BMI Calculator</h1>
+      <Link to="/calculate">
+        <button>Go to Calculator</button>
+      </Link>
+    </div>
+  );
+};
 
-.app-root {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(180deg, #f6f9ff 0%, #fff 50%);
-  padding: 40px 20px;
+export default Home;
+```
+### App.css
+```
+body {
+  background: linear-gradient(to bottom right, #dfe9f3, #ffffff);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Card */
-.bmi-wrap { width: 100%; max-width: 760px; }
-.bmi-card {
-  background: linear-gradient(180deg, #ffffff, #fbfdff);
-  border-radius: 16px;
-  padding: 28px;
-  box-shadow: 0 12px 30px rgba(32, 45, 80, 0.08);
-  border: 1px solid rgba(32,45,80,0.04);
-}
-
-/* Title */
-.bmi-title {
-  margin: 0 0 18px 0;
-  font-size: 1.6rem;
-  color: #21304a;
-  letter-spacing: -0.2px;
+.page {
   text-align: center;
+  margin-top: 60px;
+  padding: 20px;
 }
 
-/* Unit toggle */
-.unit-toggle {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-bottom: 18px;
-}
-
-.unit {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 0.95rem;
-  color: #445566;
-  background: transparent;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.unit input { display: none; }
-
-.unit.selected {
-  background: linear-gradient(90deg, #ff9a9e 0%, #fecfef 100%);
-  color: white;
-  box-shadow: 0 6px 16px rgba(255, 105, 135, 0.12);
-  border: 1px solid rgba(255,255,255,0.16);
-}
-
-/* Fields layout */
-.fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.label-text {
-  font-size: 0.9rem;
-  color: #556677;
-}
-
-/* Inputs */
-.field input[type="text"] {
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(35,47,63,0.08);
-  background: linear-gradient(180deg,#fff,#fafcff);
-  font-size: 1rem;
-  outline: none;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-}
-
-.field input[type="text"]:focus {
-  box-shadow: 0 6px 18px rgba(34, 124, 255, 0.12);
-  transform: translateY(-1px);
-  border-color: rgba(34,124,255,0.25);
-}
-
-/* Error */
-.error {
-  margin-top: 8px;
-  color: #9b1c1c;
-  background: #fff5f5;
-  border: 1px solid rgba(155,28,28,0.08);
-  padding: 10px 12px;
+input {
+  padding: 12px;
+  margin: 12px;
+  width: 220px;
   border-radius: 8px;
-  font-size: 0.95rem;
+  border: 1px solid #ccc;
+  font-size: 16px;
 }
 
-/* Actions */
-.actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 12px;
-  margin-bottom: 18px;
-}
-
-.btn {
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 0.98rem;
-  cursor: pointer;
+button {
+  padding: 12px 25px;
+  background: #28a745;
   border: none;
-}
-
-.btn.primary {
-  background: linear-gradient(90deg,#5ab0ff,#6bb6ff);
   color: white;
-  box-shadow: 0 8px 20px rgba(91,160,255,0.18);
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
 }
 
-.btn.ghost {
-  background: transparent;
-  color: #445566;
-  border: 1px solid rgba(68,85,102,0.08);
+button:hover {
+  background: #218838;
 }
 
-/* Result area */
 .result {
-  margin-top: 6px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* Placeholder */
-.result-placeholder {
-  color: #667788;
-  font-size: 0.98rem;
-}
-
-/* Result box */
-.result-box {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  background: linear-gradient(90deg, #ffffff, #f7fbff);
-  padding: 14px 18px;
-  border-radius: 12px;
-  border: 1px solid rgba(33,48,74,0.04);
-  box-shadow: 0 8px 24px rgba(32,45,80,0.04);
-  width: 100%;
-  max-width: 640px;
-}
-
-.bmi-value {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 120px;
-  padding-right: 10px;
-  border-right: 1px solid rgba(34,47,63,0.04);
-}
-
-.bmi-value .num {
-  font-size: 2.4rem;
-  font-weight: 700;
-  color: #21304a;
-  letter-spacing: -1px;
-}
-
-.unit-text {
-  font-size: 0.95rem;
-  color: #667788;
-  margin-top: 4px;
-}
-
-/* Category badge */
-.bmi-category {
-  font-size: 1rem;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: #eef6ff;
-  color: #1b4f9a;
-  font-weight: 700;
-}
-
-.bmi-category.underweight { background: #fff7e6; color: #b36b00; }
-.bmi-category.normal { background: #e9fff1; color: #0a7a3a; }
-.bmi-category.overweight { background: #fff5ea; color: #b35700; }
-.bmi-category.obese { background: #fff0f0; color: #a51c1c; }
-
-.advice {
-  color: #445566;
-  margin: 6px 0 0 0;
-  font-size: 0.95rem;
-}
-
-/* Help text */
-.help {
-  margin-top: 14px;
-  color: #7990a6;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-/* Responsive */
-@media (max-width: 680px) {
-  .fields { grid-template-columns: 1fr; }
-  .result-box { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .bmi-value { width: 100%; border-right: none; border-bottom: 1px solid rgba(34,47,63,0.04); padding-bottom: 10px; }
+  margin-top: 25px;
+  font-size: 18px;
+  color: #333;
 }
 ```
+
 
 
 ## OUTPUT
+![Screenshot 2025-05-31 003846](https://github.com/user-attachments/assets/40399164-6db6-4111-b0ab-b261db7cda41)
 
-<img width="1913" height="1199" alt="Screenshot 2025-10-29 093758" src="https://github.com/user-attachments/assets/0dc27b6d-7e47-4db5-b938-ea1a2cd00bc6" />
+
+
 
 ## RESULT
-The program for creating BMI Calculator using React Router is executed successfully.
+The BMI Calculator successfully takes user input for height and weight, performs the BMI calculation in real-time using React state and event handling, and displays the BMI value along with the corresponding health category.
